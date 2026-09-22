@@ -1,0 +1,177 @@
+#!/usr/bin/env php
+<?php
+// DirectAdmin admin-panel voor Zabbix Monitor plugin.
+// Toont status + configuratie-editor + verbindingstest.
+
+header('Content-Type: text/html; charset=utf-8');
+
+$PLUGIN_DIR = '/usr/local/directadmin/plugins/zabbix_monitor';
+$CONF       = $PLUGIN_DIR . '/zabbix_monitor.conf';
+$SEND_HOOK  = $PLUGIN_DIR . '/hooks/zabbix_send.sh';
+
+function parse_conf($path) {
+    $out = ['ZABBIX_SERVER'=>'', 'ZABBIX_PORT'=>'', 'HOSTNAME'=>'', 'ZABBIX_SENDER'=>''];
+    if (!is_readable($path)) return $out;
+    foreach (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $ln) {
+        if (preg_match('/^\s*([A-Z_]+)=(.*)$/', $ln, $m)) {
+            $out[$m[1]] = trim($m[2], "\"'");
+        }
+    }
+    return $out;
+}
+
+function write_conf($path, $vals) {
+    $body  = "# Zabbix Monitor Plugin Configuratie\n";
+    $body .= "ZABBIX_SERVER=" . $vals['ZABBIX_SERVER'] . "\n";
+    $body .= "ZABBIX_PORT="   . $vals['ZABBIX_PORT']   . "\n";
+    $body .= "HOSTNAME="      . $vals['HOSTNAME']      . "\n";
+    $body .= "ZABBIX_SENDER=" . $vals['ZABBIX_SENDER'] . "\n";
+    return @file_put_contents($path, $body) !== false;
+}
+
+function validate($v) {
+    $err = [];
+    if ($v['ZABBIX_SERVER'] === '' ||
+        !preg_match('/^[A-Za-z0-9.\-]+$/', $v['ZABBIX_SERVER'])) {
+        $err[] = 'ZABBIX_SERVER moet een hostnaam of IP zijn.';
+    }
+    if (!ctype_digit($v['ZABBIX_PORT']) ||
+        (int)$v['ZABBIX_PORT'] < 1 || (int)$v['ZABBIX_PORT'] > 65535) {
+        $err[] = 'ZABBIX_PORT moet 1-65535 zijn.';
+    }
+    if ($v['HOSTNAME'] === '' && strpos($v['HOSTNAME'], '$(') === false) {
+        $err[] = 'HOSTNAME mag niet leeg zijn.';
+    }
+    if ($v['ZABBIX_SENDER'] === '' || $v['ZABBIX_SENDER'][0] !== '/') {
+        $err[] = 'ZABBIX_SENDER moet een absoluut pad zijn.';
+    }
+    return $err;
+}
+
+$msg = ''; $msg_type = ''; $test_output = '';
+$cfg = parse_conf($CONF);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    if ($action === 'save') {
+        $new = [
+            'ZABBIX_SERVER' => trim($_POST['ZABBIX_SERVER'] ?? ''),
+            'ZABBIX_PORT'   => trim($_POST['ZABBIX_PORT']   ?? ''),
+            'HOSTNAME'      => trim($_POST['HOSTNAME']      ?? ''),
+            'ZABBIX_SENDER' => trim($_POST['ZABBIX_SENDER'] ?? ''),
+        ];
+        $errs = validate($new);
+        if ($errs) {
+            $msg = implode(' ', $errs); $msg_type = 'err';
+            $cfg = $new;
+        } else if (write_conf($CONF, $new)) {
+            $msg = 'Configuratie opgeslagen.'; $msg_type = 'ok';
+            $cfg = parse_conf($CONF);
+        } else {
+            $msg = 'Kan '.$CONF.' niet schrijven (controleer eigenaar/rechten).';
+            $msg_type = 'err';
+            $cfg = $new;
+        }
+    } elseif ($action === 'test') {
+        $cmd = 'bash ' . escapeshellarg($SEND_HOOK) .
+               ' ' . escapeshellarg('zabbix.plugin.test') .
+               ' ' . escapeshellarg((string)time()) . ' 2>&1';
+        $raw_cmd = escapeshellarg($cfg['ZABBIX_SENDER']) .
+                   ' -z ' . escapeshellarg($cfg['ZABBIX_SERVER']) .
+                   ' -p ' . escapeshellarg($cfg['ZABBIX_PORT']) .
+                   ' -s ' . escapeshellarg($cfg['HOSTNAME']) .
+                   ' -k zabbix.plugin.test -o ' . escapeshellarg((string)time()) .
+                   ' 2>&1';
+        $test_output = shell_exec($raw_cmd);
+        if ($test_output === null || trim($test_output) === '') {
+            $test_output = '(geen output — commando kon niet uitgevoerd worden)';
+        }
+    }
+}
+
+$sender_exists = is_file($cfg['ZABBIX_SENDER']) && is_executable($cfg['ZABBIX_SENDER']);
+$conf_writable = is_writable($CONF);
+$hook_ok       = is_file($SEND_HOOK) && is_executable($SEND_HOOK);
+
+function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
+?>
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Zabbix Monitor</title>
+<style>
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 20px; color: #222; }
+  h1 { margin: 0 0 4px; font-size: 20px; }
+  h2 { margin: 24px 0 8px; font-size: 15px; color: #444; border-bottom: 1px solid #ddd; padding-bottom: 4px; }
+  .sub { color: #666; margin-bottom: 16px; font-size: 13px; }
+  .grid { display: grid; grid-template-columns: 180px 1fr; gap: 8px 14px; max-width: 640px; }
+  label { align-self: center; font-weight: 500; }
+  input[type=text] { padding: 6px 8px; border: 1px solid #bbb; border-radius: 4px; font-family: monospace; font-size: 13px; }
+  .row { margin-top: 14px; }
+  button { padding: 7px 14px; border: 1px solid #888; border-radius: 4px; background: #f4f4f4; cursor: pointer; margin-right: 6px; }
+  button.primary { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+  .msg { padding: 8px 12px; border-radius: 4px; margin: 10px 0; font-size: 13px; }
+  .msg.ok  { background: #e6f4ea; color: #1e6b32; border: 1px solid #b7dfc2; }
+  .msg.err { background: #fdecea; color: #a2251b; border: 1px solid #f5c2be; }
+  pre { background: #111; color: #eee; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto; }
+  table.status { border-collapse: collapse; font-size: 13px; }
+  table.status td { padding: 3px 12px 3px 0; }
+  .ok  { color: #1e6b32; font-weight: 600; }
+  .bad { color: #a2251b; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Zabbix Monitor</h1>
+<div class="sub">DirectAdmin plugin die events doorstuurt naar Zabbix via <code>zabbix_sender</code>.</div>
+
+<?php if ($msg): ?>
+  <div class="msg <?= h($msg_type) ?>"><?= h($msg) ?></div>
+<?php endif; ?>
+
+<h2>Status</h2>
+<table class="status">
+  <tr><td>Configuratiebestand</td><td><code><?= h($CONF) ?></code></td>
+      <td class="<?= $conf_writable ? 'ok' : 'bad' ?>">
+        <?= $conf_writable ? 'schrijfbaar' : 'niet schrijfbaar' ?></td></tr>
+  <tr><td>zabbix_sender</td><td><code><?= h($cfg['ZABBIX_SENDER']) ?></code></td>
+      <td class="<?= $sender_exists ? 'ok' : 'bad' ?>">
+        <?= $sender_exists ? 'gevonden' : 'ontbreekt' ?></td></tr>
+  <tr><td>Send-hook</td><td><code><?= h($SEND_HOOK) ?></code></td>
+      <td class="<?= $hook_ok ? 'ok' : 'bad' ?>">
+        <?= $hook_ok ? 'ok' : 'ontbreekt/geen +x' ?></td></tr>
+</table>
+
+<h2>Configuratie</h2>
+<form method="post">
+  <input type="hidden" name="action" value="save">
+  <div class="grid">
+    <label>Zabbix server</label>
+    <input type="text" name="ZABBIX_SERVER" value="<?= h($cfg['ZABBIX_SERVER']) ?>" placeholder="1.2.3.4 of zabbix.example.com">
+
+    <label>Poort</label>
+    <input type="text" name="ZABBIX_PORT" value="<?= h($cfg['ZABBIX_PORT']) ?>" placeholder="10051">
+
+    <label>Hostname (in Zabbix)</label>
+    <input type="text" name="HOSTNAME" value="<?= h($cfg['HOSTNAME']) ?>" placeholder="$(hostname -f)">
+
+    <label>Pad zabbix_sender</label>
+    <input type="text" name="ZABBIX_SENDER" value="<?= h($cfg['ZABBIX_SENDER']) ?>" placeholder="/usr/bin/zabbix_sender">
+  </div>
+  <div class="row">
+    <button class="primary" type="submit">Opslaan</button>
+  </div>
+</form>
+
+<h2>Verbindingstest</h2>
+<form method="post">
+  <input type="hidden" name="action" value="test">
+  <button type="submit">Testwaarde sturen (key: <code>zabbix.plugin.test</code>)</button>
+</form>
+<?php if ($test_output !== ''): ?>
+  <pre><?= h($test_output) ?></pre>
+<?php endif; ?>
+
+</body>
+</html>
