@@ -16,6 +16,11 @@ mkdir -p dist
 # keep it equal to the id — version lives in plugin.conf.
 OUT="dist/${NAME}.tar.gz"
 
+# version.txt is what DA's version_url points at — it must contain
+# just the version string, otherwise DA compares the whole file to
+# the installed version and keeps offering an "update".
+echo "$VERSION" > version.txt
+
 tar --exclude='.git' \
     --exclude='.gitignore' \
     --exclude='dist' \
