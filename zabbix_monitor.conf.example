@@ -1,5 +1,5 @@
 # Zabbix Monitor Plugin Configuratie
 ZABBIX_SERVER=
 ZABBIX_PORT=10051
-HOSTNAME=$(hostname -f)
+HOSTNAME=
 ZABBIX_SENDER=/usr/bin/zabbix_sender

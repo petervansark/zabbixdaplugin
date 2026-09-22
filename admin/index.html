@@ -162,7 +162,7 @@ function h($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
     <input type="text" name="ZABBIX_PORT" value="<?= h($cfg['ZABBIX_PORT']) ?>" placeholder="10051">
 
     <label>Hostname (in Zabbix)</label>
-    <input type="text" name="HOSTNAME" value="<?= h($cfg['HOSTNAME']) ?>" placeholder="$(hostname -f)">
+    <input type="text" name="HOSTNAME" value="<?= h($cfg['HOSTNAME']) ?>" placeholder="<?= h(trim((string)shell_exec('hostname -f 2>/dev/null || hostname'))) ?>">
 
     <label>Pad zabbix_sender</label>
     <input type="text" name="ZABBIX_SENDER" value="<?= h($cfg['ZABBIX_SENDER']) ?>" placeholder="/usr/bin/zabbix_sender">

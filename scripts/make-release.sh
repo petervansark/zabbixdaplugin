@@ -21,7 +21,7 @@ tar --exclude='.git' \
     --exclude='dist' \
     --exclude='./.*' \
     -czf "$OUT" \
-    plugin.conf README.md LICENSE zabbix_items.txt zabbix_monitor.conf \
+    plugin.conf README.md LICENSE zabbix_items.txt zabbix_monitor.conf.example \
     admin hooks scripts
 
 echo "Gebouwd: $OUT"
