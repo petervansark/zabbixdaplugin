@@ -20,10 +20,13 @@ if [ -f "$PLUGIN_DIR/admin/index.html" ]; then
     chown "$DA_USER:$DA_GROUP" "$PLUGIN_DIR/admin/index.html" || true
 fi
 
-# Config schrijfbaar voor de admin-UI (die draait als diradmin).
+# Config schrijfbaar voor de admin-UI. DA voert het plugin-CGI uit
+# als de ingelogde admin's linux user (varieert per admin), dus 0666
+# is de simpelste manier om edits vanuit de UI toe te staan. Het
+# bestand bevat geen secrets (alleen server-IP, poort, hostname, pad).
 if [ -f "$PLUGIN_DIR/zabbix_monitor.conf" ]; then
     chown "$DA_USER:$DA_GROUP" "$PLUGIN_DIR/zabbix_monitor.conf" || true
-    chmod 0644 "$PLUGIN_DIR/zabbix_monitor.conf"
+    chmod 0666 "$PLUGIN_DIR/zabbix_monitor.conf"
 fi
 
 # Cron voor quota check — verwijst naar het uiteindelijke plugin-pad.
