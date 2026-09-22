@@ -1,5 +1,5 @@
 #!/bin/bash
-# Hook: quota/bandwidth overschreden
+# Hook: quota/bandwidth exceeded.
 # DirectAdmin env vars: USERNAME, QUOTA, BANDWIDTH, INODE
 PLUGIN_DIR="$(dirname "$(readlink -f "$0")")/.."
 source "$PLUGIN_DIR/zabbix_monitor.conf"

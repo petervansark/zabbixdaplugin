@@ -1,6 +1,6 @@
 #!/bin/bash
-# Helper: verstuur data naar Zabbix
-# Gebruik: zabbix_send.sh <key> <value>
+# Helper: send data to Zabbix.
+# Usage: zabbix_send.sh <key> <value>
 CONF_FILE="$(dirname "$(readlink -f "$0")")/../zabbix_monitor.conf"
 source "$CONF_FILE"
 KEY="$1"

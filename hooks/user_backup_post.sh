@@ -1,6 +1,6 @@
 #!/bin/bash
-# Hook: na backup van gebruiker
-# DirectAdmin env vars: username, result (0=ok, 1=fout)
+# Hook: after user backup.
+# DirectAdmin env vars: username, result (0=ok, 1=error)
 PLUGIN_DIR="$(dirname "$(readlink -f "$0")")/.."
 source "$PLUGIN_DIR/zabbix_monitor.conf"
 
@@ -9,10 +9,10 @@ RESULT="${result:-1}"
 
 if [ "$RESULT" = "0" ]; then
     STATUS="1"
-    MSG="Backup OK voor $USERNAME"
+    MSG="Backup OK for $USERNAME"
 else
     STATUS="0"
-    MSG="Backup MISLUKT voor $USERNAME"
+    MSG="Backup FAILED for $USERNAME"
 fi
 
 $ZABBIX_SENDER -z "$ZABBIX_SERVER" -p "$ZABBIX_PORT" -s "$HOSTNAME" \

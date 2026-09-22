@@ -1,6 +1,6 @@
 #!/bin/bash
-# Bouwt een DirectAdmin-compatibele plugin tarball in dist/.
-# plugin.conf komt in de root van het archief (vereist door DA).
+# Builds a DirectAdmin-compatible plugin tarball in dist/.
+# plugin.conf must sit at the archive root (required by DA).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
@@ -8,12 +8,12 @@ cd "$ROOT"
 
 NAME="$(awk -F= '$1=="id"{print $2}' plugin.conf)"
 VERSION="$(awk -F= '$1=="version"{print $2}' plugin.conf)"
-: "${NAME:?id ontbreekt in plugin.conf}"
-: "${VERSION:?version ontbreekt in plugin.conf}"
+: "${NAME:?id missing from plugin.conf}"
+: "${VERSION:?version missing from plugin.conf}"
 
 mkdir -p dist
-# DA gebruikt de tarball-basename als plugin-directorynaam, dus
-# houden we hem gelijk aan de id — versie zit in plugin.conf.
+# DA uses the tarball basename as the plugin directory name, so we
+# keep it equal to the id — version lives in plugin.conf.
 OUT="dist/${NAME}.tar.gz"
 
 tar --exclude='.git' \
@@ -24,5 +24,5 @@ tar --exclude='.git' \
     plugin.conf README.md LICENSE zabbix_items.txt zabbix_monitor.conf.example \
     admin hooks scripts
 
-echo "Gebouwd: $OUT"
+echo "Built: $OUT"
 tar -tzf "$OUT"

@@ -1,4 +1,4 @@
-# Zabbix Monitor Plugin Configuratie
+# Zabbix Monitor plugin configuration
 ZABBIX_SERVER=
 ZABBIX_PORT=10051
 HOSTNAME=

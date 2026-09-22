@@ -1,4 +1,4 @@
 # DirectAdmin plugin for Zabbix monitoring
-Directadmin plugin for Zabbix monitoring for: backups, user disk quota, SSL renewal failures
+DirectAdmin plugin for Zabbix monitoring for: backups, user disk quota, SSL renewal failures
 
-Upload the plugin under Extra feaures -> Plugin Manager
+Upload the plugin under Extra Features -> Plugin Manager

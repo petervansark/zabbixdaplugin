@@ -1,6 +1,6 @@
 #!/bin/bash
-# Cron: quota check voor alle gebruikers elke 30 minuten
-# Voeg toe aan cron: */30 * * * * /usr/local/directadmin/plugins/zabbix_monitor/hooks/quota_check_cron.sh
+# Cron: quota check for all users every 30 minutes.
+# Add to cron: */30 * * * * /usr/local/directadmin/plugins/zabbix_monitor/hooks/quota_check_cron.sh
 PLUGIN_DIR="$(dirname "$(readlink -f "$0")")/.."
 source "$PLUGIN_DIR/zabbix_monitor.conf"
 
