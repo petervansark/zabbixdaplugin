@@ -1,0 +1,25 @@
+=== Zabbix Items voor DirectAdmin monitoring ===
+
+Type voor alle items: Zabbix trapper
+
+BACKUP STATUS:
+  Key: directadmin.backup.status[gebruiker]
+  Type: Numeric unsigned (1=OK, 0=mislukt)
+  Trigger: last(/Nesiafood/directadmin.backup.status[gebruiker])=0
+
+SSL STATUS:
+  Key: directadmin.ssl.status[domein]
+  Type: Numeric unsigned (1=OK, 0=mislukt)
+  Trigger: last(/Nesiafood/directadmin.ssl.status[domein])=0
+
+QUOTA GEBRUIK:
+  Key: directadmin.quota.usage[gebruiker]
+  Type: Numeric unsigned
+  Units: %
+  Trigger: last(/Nesiafood/directadmin.quota.usage[gebruiker])>90
+
+BANDWIDTH GEBRUIK:
+  Key: directadmin.bandwidth.usage[gebruiker]
+  Type: Numeric unsigned
+  Units: %
+  Trigger: last(/Nesiafood/directadmin.bandwidth.usage[gebruiker])>90
