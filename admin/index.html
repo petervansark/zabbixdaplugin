@@ -51,7 +51,18 @@ function validate($v) {
 $msg = ''; $msg_type = ''; $test_output = '';
 $cfg = parse_conf($CONF);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// DA runs the CGI as CLI-mode PHP (#!/usr/local/bin/php), which does not
+// populate $_SERVER['REQUEST_METHOD'] or $_POST from the CGI env/stdin.
+// Read the method from the environment and parse the body ourselves.
+$req_method = $_SERVER['REQUEST_METHOD'] ?? (getenv('REQUEST_METHOD') ?: '');
+if ($req_method === 'POST' && empty($_POST)) {
+    $body = file_get_contents('php://input');
+    if (is_string($body) && $body !== '') {
+        parse_str($body, $_POST);
+    }
+}
+
+if ($req_method === 'POST') {
     $action = $_POST['action'] ?? '';
     if ($action === 'save') {
         $new = [
