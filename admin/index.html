@@ -51,13 +51,17 @@ function validate($v) {
 $msg = ''; $msg_type = ''; $test_output = '';
 $cfg = parse_conf($CONF);
 
-// DA runs the CGI as CLI-mode PHP (#!/usr/local/bin/php), which does not
-// populate $_SERVER['REQUEST_METHOD'] or $_POST from the CGI env/stdin.
-// Read the method from the environment and parse the body ourselves.
+// DA runs the CGI as CLI-mode PHP, so $_POST is never auto-populated.
+// DirectAdmin passes the URL-encoded POST body via $_SERVER['POST']
+// (not stdin, not CONTENT_LENGTH). Fall back to php://input for
+// non-DA environments.
 $req_method = $_SERVER['REQUEST_METHOD'] ?? (getenv('REQUEST_METHOD') ?: '');
 if ($req_method === 'POST' && empty($_POST)) {
-    $body = file_get_contents('php://input');
-    if (is_string($body) && $body !== '') {
+    $body = $_SERVER['POST'] ?? (getenv('POST') ?: '');
+    if ($body === '') {
+        $body = (string)@file_get_contents('php://input');
+    }
+    if ($body !== '') {
         parse_str($body, $_POST);
     }
 }
